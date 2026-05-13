@@ -1,0 +1,14 @@
+# Theos build artifacts
+tweak/.theos/
+tweak/packages/
+tweak/obj/
+
+# Go
+dashboard/homepod-dashboard
+dashboard/*.test
+
+# macOS
+.DS_Store
+
+# Secrets
+*.plist.local

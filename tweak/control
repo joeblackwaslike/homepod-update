@@ -1,0 +1,10 @@
+Package: com.yourname.homepodaudiobridge
+Name: HomePod Audio Bridge
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Streams beam-formed mic audio to Home Assistant via Wyoming protocol over TCP.
+             Hooks mediaserverd's AudioUnitRender to capture echo-cancelled PCM and forward
+             it to a central Wyoming/openWakeWord intake. Preserves AirPlay natively.
+Maintainer: Joe Black <joe@joeblack.nyc>
+Author: Joe Black <joe@joeblack.nyc>
+Section: Tweaks
