@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HomePod Satellite</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;background:#F2F2F7;height:100vh;display:flex;align-items:stretch}
+.app{display:flex;width:100%;min-height:100vh}
+.sidebar{width:200px;background:rgba(242,242,247,0.97);border-right:0.5px solid rgba(0,0,0,0.1);padding:16px 8px;flex-shrink:0}
+.sidebar-header{padding:0 8px 16px;border-bottom:0.5px solid rgba(0,0,0,0.08);margin-bottom:8px}
+.device-icon{width:40px;height:40px;background:#1C1C1E;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.device-icon svg{width:22px;height:22px}
+.device-name{font-size:13px;font-weight:600;color:#1C1C1E;letter-spacing:-0.2px}
+.device-sub{font-size:11px;color:#86868B;margin-top:1px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;font-size:13px;color:#3C3C3E;cursor:pointer;margin-bottom:1px;user-select:none}
+.nav-item:hover{background:rgba(0,0,0,0.04)}
+.nav-item.active{background:#007AFF;color:white}
+.nav-icon{width:16px;height:16px;flex-shrink:0}
+.badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px;margin-left:auto}
+.badge.red{background:#FF3B30;color:white}
+.content{flex:1;padding:20px;overflow-y:auto}
+.section{display:none}.section.active{display:block}
+.section-title{font-size:20px;font-weight:700;color:#1C1C1E;letter-spacing:-0.4px;margin-bottom:16px}
+.status-bar{display:flex;align-items:center;gap:8px;background:white;border-radius:12px;padding:12px 16px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.08)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background 0.3s}
+.dot.green{background:#34C759;box-shadow:0 0 0 3px rgba(52,199,89,0.2)}
+.dot.red{background:#FF3B30}.dot.gray{background:#C7C7CC}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.metric{background:white;border-radius:12px;padding:14px;border:0.5px solid rgba(0,0,0,0.08)}
+.metric-label{font-size:11px;color:#86868B;text-transform:uppercase;letter-spacing:0.4px;font-weight:500;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1;color:#1C1C1E}
+.metric-unit{font-size:12px;color:#86868B;margin-top:3px}
+.card{background:white;border-radius:12px;border:0.5px solid rgba(0,0,0,0.08);overflow:hidden;margin-bottom:12px}
+.card-header{padding:11px 16px;border-bottom:0.5px solid rgba(0,0,0,0.06)}
+.card-title{font-size:13px;font-weight:600;color:#1C1C1E}
+.row{display:flex;align-items:center;padding:10px 16px;border-bottom:0.5px solid rgba(0,0,0,0.06);min-height:42px}
+.row:last-child{border-bottom:none}
+.row-label{flex:1;font-size:13px;color:#1C1C1E}
+.row-value{font-size:13px;color:#86868B;font-family:'SF Mono',ui-monospace,monospace;font-weight:400}
+.row-right{width:196px;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0}
+.cfg-input{width:100%;border:none;outline:none;background:#F2F2F7;border-radius:7px;padding:5px 10px;font-size:13px;font-weight:400;color:#1C1C1E;font-family:'SF Mono',ui-monospace,monospace}
+.cfg-input.short{width:90px;text-align:right}
+.cfg-input:focus{background:#E5F0FF}
+.toggle{width:36px;height:22px;border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;transition:background 0.15s}
+.toggle.on{background:#34C759}.toggle.off{background:#D1D1D6}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;transition:left 0.15s}
+.toggle.on::after{left:16px}.toggle.off::after{left:2px}
+.log-wrap{padding:12px 16px}
+.log-filter{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.log-filter input{flex:1;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:6px 10px;font-size:12px;background:#F2F2F7;outline:none;color:#1C1C1E}
+.log-pills{display:flex;gap:5px}
+.pill{font-size:11px;padding:4px 9px;border-radius:20px;cursor:pointer;font-weight:500;background:#E5E5EA;color:#3C3C3E;white-space:nowrap;user-select:none}
+.pill.active{background:#007AFF;color:white}
+.log-body{background:#1C1C1E;border-radius:8px;padding:12px;font-family:'SF Mono',ui-monospace,monospace;font-size:11px;line-height:1.7;height:300px;overflow-y:auto}
+.log-line{display:flex;gap:10px}
+.log-time{color:#636366;flex-shrink:0}
+.c-info{color:#64D2FF}.c-warn{color:#FFD60A}.c-error{color:#FF453A}.c-ok{color:#32D74B}.c-default{color:#E5E5EA}
+.err-row{display:flex;gap:12px;padding:12px 16px;border-bottom:0.5px solid rgba(0,0,0,0.06)}
+.err-row:last-child{border-bottom:none}
+.err-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.err-ico.red{background:#FFE5E5}.err-ico.amber{background:#FFF3CC}
+.err-title{font-size:13px;font-weight:600;color:#1C1C1E;margin-bottom:2px}
+.err-desc{font-size:12px;color:#86868B;line-height:1.4}
+.err-time{font-size:11px;color:#C7C7CC;margin-top:4px;font-family:'SF Mono',ui-monospace,monospace;font-weight:400}
+.save-btn{margin-top:4px;background:#007AFF;color:white;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.save-btn:active{background:#0066DD}
+.empty{font-size:13px;color:#86868B;padding:20px 16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="device-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <ellipse cx="12" cy="20" rx="7" ry="2.2" fill="white" fill-opacity="0.3"/>
+          <path d="M5.5 19.5V9a6.5 6.5 0 0113 0v10.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="12" cy="9" r="2.2" fill="white"/>
+        </svg>
+      </div>
+      <div class="device-name">HomePod Satellite</div>
+      <div class="device-sub" id="sidebar-sub">audioOS · A8</div>
+    </div>
+    <div class="nav-item active" onclick="switchTab('overview',this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+      Overview
+    </div>
+    <div class="nav-item" onclick="switchTab('config',this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Configuration
+    </div>
+    <div class="nav-item" onclick="switchTab('logs',this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h7a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+      Logs
+    </div>
+    <div class="nav-item" id="nav-errors" onclick="switchTab('errors',this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      Errors
+      <span class="badge red" id="error-badge" style="display:none"></span>
+    </div>
+  </div>
+  <div class="content">
+    <div class="section active" id="tab-overview">
+      <div class="section-title">Overview</div>
+      <div class="status-bar">
+        <div class="dot gray" id="conn-dot"></div>
+        <span style="font-size:13px;font-weight:500;color:#1C1C1E;" id="conn-label">Connecting…</span>
+        <span style="font-size:12px;color:#86868B;margin-left:auto;" id="conn-since"></span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Uptime</div><div class="metric-value" style="color:#007AFF;" id="m-uptime">—</div><div class="metric-unit">system</div></div>
+        <div class="metric"><div class="metric-label">Audio chunks</div><div class="metric-value" id="m-chunks">—</div><div class="metric-unit">sent</div></div>
+        <div class="metric"><div class="metric-label">Reconnects</div><div class="metric-value" id="m-reconnects">—</div><div class="metric-unit">this session</div></div>
+        <div class="metric"><div class="metric-label">Send errors</div><div class="metric-value" id="m-errors">—</div><div class="metric-unit">total</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Audio stream</span></div>
+        <div class="row"><span class="row-label">Sample rate</span><span class="row-value" id="s-rate">—</span></div>
+        <div class="row"><span class="row-label">Bit width</span><span class="row-value" id="s-width">—</span></div>
+        <div class="row"><span class="row-label">Channels</span><span class="row-value" id="s-channels">—</span></div>
+        <div class="row"><span class="row-label">Wyoming framing</span><span class="row-value" style="color:#34C759;">active</span></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Device</span></div>
+        <div class="row"><span class="row-label">Model</span><span class="row-value">HomePod 1st gen (A8)</span></div>
+        <div class="row"><span class="row-label">IP address</span><span class="row-value" id="s-ip">—</span></div>
+        <div class="row"><span class="row-label">Last status update</span><span class="row-value" id="s-updated">—</span></div>
+      </div>
+    </div>
+    <div class="section" id="tab-config">
+      <div class="section-title">Configuration</div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Server</span></div>
+        <div class="row"><span class="row-label">Hostname / IP</span><div class="row-right"><input class="cfg-input" id="c-server-ip" placeholder="home-assistant.local"/></div></div>
+        <div class="row"><span class="row-label">Port</span><div class="row-right"><input class="cfg-input short" id="c-server-port" placeholder="10700"/></div></div>
+        <div class="row"><span class="row-label">Retry interval (sec)</span><div class="row-right"><input class="cfg-input short" id="c-retry" placeholder="5"/></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Audio overrides</span></div>
+        <div class="row"><span class="row-label">Sample rate (Hz)</span><div class="row-right"><input class="cfg-input short" id="c-rate" placeholder="48000"/></div></div>
+        <div class="row"><span class="row-label">Channels</span><div class="row-right"><input class="cfg-input short" id="c-channels" placeholder="1"/></div></div>
+        <div class="row"><span class="row-label">Bit width (bytes)</span><div class="row-right"><input class="cfg-input short" id="c-bitwidth" placeholder="2"/></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Daemon</span></div>
+        <div class="row"><span class="row-label">SO_KEEPALIVE</span><div class="row-right"><div class="toggle off" id="c-keepalive" onclick="toggleCfg(this)"></div></div></div>
+        <div class="row"><span class="row-label">Auto-restart on send error</span><div class="row-right"><div class="toggle off" id="c-autorestart" onclick="toggleCfg(this)"></div></div></div>
+      </div>
+      <button class="save-btn" onclick="saveConfig()">Save &amp; reload daemon</button>
+      <span id="save-msg" style="font-size:12px;color:#86868B;margin-left:12px;"></span>
+    </div>
+    <div class="section" id="tab-logs">
+      <div class="section-title">Logs</div>
+      <div class="card">
+        <div class="log-wrap">
+          <div class="log-filter">
+            <input id="log-filter-input" placeholder="Filter…" oninput="renderLogs()"/>
+            <div class="log-pills">
+              <div class="pill active" onclick="setLevel('',this)">All</div>
+              <div class="pill" onclick="setLevel('info',this)">Info</div>
+              <div class="pill" onclick="setLevel('warn',this)">Warn</div>
+              <div class="pill" onclick="setLevel('error',this)">Error</div>
+            </div>
+          </div>
+          <div class="log-body" id="log-body"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section" id="tab-errors">
+      <div class="section-title">Errors</div>
+      <div class="card" id="error-list"><div class="empty">No errors recorded.</div></div>
+    </div>
+  </div>
+</div>
+<script>
+let allLogLines=[], activeLevel='';
+function switchTab(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');el.classList.add('active');}
+function toggleCfg(el){el.classList.toggle('on');el.classList.toggle('off');}
+function setLevel(l,el){activeLevel=l;document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderLogs();}
+function fmtUptime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;}
+function fmtChunks(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(0)+'K';return String(n);}
+function levelClass(l){return{info:'c-info',warn:'c-warn',error:'c-error',ok:'c-ok'}[l]||'c-default';}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function renderLogs(){
+  const filter=(document.getElementById('log-filter-input').value||'').toLowerCase();
+  const body=document.getElementById('log-body');
+  const filtered=allLogLines.filter(l=>{
+    if(activeLevel&&l.level!==activeLevel)return false;
+    if(filter&&!l.message.toLowerCase().includes(filter)&&!l.time.includes(filter))return false;
+    return true;
+  });
+  body.innerHTML=filtered.map(l=>`<div class="log-line"><span class="log-time">${l.time}</span><span class="${levelClass(l.level)}">${esc(l.message)}</span></div>`).join('')||'<div style="color:#636366;padding:4px 0">No matching entries.</div>';
+  body.scrollTop=body.scrollHeight;
+}
+function renderErrors(lines){
+  const errors=lines.filter(l=>l.level==='error'||l.level==='warn');
+  const badge=document.getElementById('error-badge');
+  if(!errors.length){badge.style.display='none';document.getElementById('error-list').innerHTML='<div class="empty">No errors recorded.</div>';return;}
+  badge.style.display='';badge.textContent=errors.length;
+  const grouped=[];
+  for(const e of errors){const last=grouped[grouped.length-1];if(last&&last.message===e.message){last.count++;last.lastTime=e.time;}else grouped.push({...e,count:1,lastTime:e.time});}
+  const ico=c=>`<svg width="14" height="14" viewBox="0 0 20 20" fill="${c}"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>`;
+  document.getElementById('error-list').innerHTML=grouped.map(e=>{
+    const isErr=e.level==='error',cls=isErr?'red':'amber',color=isErr?'#FF3B30':'#FF9F0A';
+    const title=e.count>1?`${esc(e.message)} (×${e.count})`:esc(e.message);
+    const timeStr=e.count>1?`${e.time} – ${e.lastTime}`:e.time;
+    return`<div class="err-row"><div class="err-ico ${cls}">${ico(color)}</div><div><div class="err-title">${title}</div><div class="err-time">${timeStr}</div></div></div>`;
+  }).join('');
+}
+function setToggle(id,val){const el=document.getElementById(id);el.classList.toggle('on',!!val);el.classList.toggle('off',!val);}
+async function fetchStatus(){
+  try{
+    const d=await(await fetch('/api/status')).json();
+    const dot=document.getElementById('conn-dot');
+    dot.className='dot '+(d.connected?'green':'red');
+    document.getElementById('conn-label').textContent=d.connected?`Connected to ${d.server_ip}:${d.server_port}`:`Disconnected — last seen ${d.server_ip}:${d.server_port}`;
+    document.getElementById('conn-since').textContent=d.connected&&d.bridge_uptime_seconds>0?`since ${fmtUptime(d.bridge_uptime_seconds)} ago`:'';
+    document.getElementById('m-uptime').textContent=fmtUptime(d.system_uptime_seconds||0);
+    document.getElementById('m-chunks').textContent=fmtChunks(d.chunks_sent||0);
+    const rc=document.getElementById('m-reconnects');rc.textContent=d.reconnects||0;rc.style.color=d.reconnects>0?'#FF9F0A':'#1C1C1E';
+    const ec=document.getElementById('m-errors');ec.textContent=d.send_errors||0;ec.style.color=d.send_errors>0?'#FF3B30':'#1C1C1E';
+    document.getElementById('s-rate').textContent=d.asbd_rate?`${d.asbd_rate} Hz`:'—';
+    document.getElementById('s-width').textContent=d.asbd_width?`${d.asbd_width*8}-bit PCM`:'—';
+    document.getElementById('s-channels').textContent=d.asbd_channels?`${d.asbd_channels} (${d.asbd_channels===1?'mono':'stereo'})`:'—';
+    document.getElementById('s-ip').textContent=d.device_ip||'—';
+    document.getElementById('s-updated').textContent=d.last_updated?new Date(d.last_updated*1000).toLocaleTimeString():'—';
+    document.getElementById('sidebar-sub').textContent=`audioOS · A8 · ${d.device_ip||'…'}`;
+  }catch(e){document.getElementById('conn-dot').className='dot gray';document.getElementById('conn-label').textContent='Dashboard unreachable';}
+}
+async function fetchLogs(){
+  try{const d=await(await fetch('/api/logs?n=200')).json();allLogLines=d.lines||[];renderLogs();renderErrors(allLogLines);}catch(e){}
+}
+async function fetchConfig(){
+  try{
+    const d=await(await fetch('/api/config')).json();
+    document.getElementById('c-server-ip').value=d.server_ip||'';
+    document.getElementById('c-server-port').value=d.server_port||'';
+    document.getElementById('c-retry').value=d.retry_interval||'';
+    document.getElementById('c-rate').value=d.sample_rate||'';
+    document.getElementById('c-channels').value=d.channels||'';
+    document.getElementById('c-bitwidth').value=d.bit_width||'';
+    setToggle('c-keepalive',d.so_keepalive);
+    setToggle('c-autorestart',d.auto_restart);
+  }catch(e){}
+}
+async function saveConfig(){
+  const msg=document.getElementById('save-msg');
+  const payload={server_ip:document.getElementById('c-server-ip').value,server_port:parseInt(document.getElementById('c-server-port').value)||10700,retry_interval:parseInt(document.getElementById('c-retry').value)||5,sample_rate:parseInt(document.getElementById('c-rate').value)||48000,channels:parseInt(document.getElementById('c-channels').value)||1,bit_width:parseInt(document.getElementById('c-bitwidth').value)||2,so_keepalive:document.getElementById('c-keepalive').classList.contains('on'),auto_restart:document.getElementById('c-autorestart').classList.contains('on')};
+  try{
+    const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(r.ok){msg.textContent='Saved. Daemon restarting…';msg.style.color='#34C759';}
+    else{const d=await r.json();msg.textContent='Error: '+(d.error||r.status);msg.style.color='#FF3B30';}
+  }catch(e){msg.textContent='Network error';msg.style.color='#FF3B30';}
+  setTimeout(()=>{msg.textContent='';},4000);
+}
+fetchStatus();fetchLogs();fetchConfig();
+setInterval(fetchStatus,5000);setInterval(fetchLogs,10000);
+</script>
+</body>
+</html>
